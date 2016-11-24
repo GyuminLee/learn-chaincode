@@ -113,17 +113,71 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Println("invoke is running " + function)
 
-	// Handle different functions
-	if function == "init" {
-		return t.Init(stub, "init", args)
-	} else if function == "write" {
-		return t.write(stub, args)
-	} else if function == "list_users" {
-		return t.listUsers(stub, args)
-	}
-	fmt.Println("invoke did not find func: " + function)
+	var X int // Transaction value
+	var err error
 
-	return nil, errors.New("Received unknown function invocation: " + function)
+	if len(args) != 3 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 3")
+	}
+
+	// Get the state from the ledger
+	// TODO: will be nice to have a GetAllState call to ledger
+	Avalbytes, err := stub.GetState(args[0])
+	if err != nil {
+		return nil, errors.New("Failed to get state")
+	}
+	var userA User
+	err = json.Unmarshal(Avalbytes, userA)
+	if err != nil {
+		return nil, errors.New("Failed to marshal string to struct of userA")
+	}
+
+	Bvalbytes, err := stub.GetState(args[1])
+	if err != nil {
+		return nil, errors.New("Failed to get state")
+	}
+
+	var userB User
+	err = json.Unmarshal(Bvalbytes, userB)
+	if err != nil {
+		return nil, errors.New("Failed to marshal string to struct of userB")
+	}
+
+	// Perform the execution
+	X, err = strconv.Atoi(args[2])
+	if err != nil {
+		return nil, errors.New("Third argument must be integer")
+	}
+
+	userA.Balance = userA.Balance - X
+	userB.Balance = userB.Balance + X
+	fmt.Printf("Aval = %d, Bval = %d\n", userA.Balance, userB.Balance)
+
+	b, err := json.Marshal(userA)
+	if err != nil {
+		fmt.Println(err)
+		return nil, errors.New("Errors while creating json string for usera")
+	}
+
+	// Write the state back to the ledger
+	err = stub.PutState(userA.Name, b)
+	if err != nil {
+		return nil, err
+	}
+
+	b, err = json.Marshal(userB)
+	if err != nil {
+		fmt.Println(err)
+		return nil, errors.New("Errors while creating json string for userb")
+	}
+
+	err = stub.PutState(userB.Name, b)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+
 }
 
 // Query is our entry point for queries
@@ -133,6 +187,8 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 	// Handle different functions
 	if function == "read" { //read a variable
 		return t.read(stub, args)
+	} else if function == "list_users" {
+		return t.listUsers(stub, args)
 	}
 	fmt.Println("query did not find func: " + function)
 
