@@ -17,8 +17,10 @@ limitations under the License.
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
@@ -43,54 +45,48 @@ func main() {
 // Init resets all the things
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 
-	fmt.Println("No of arguments:", len(args))
+	if len(args) != 6 {
+		return nil, errors.New("Incorrect number of arguments. Execting 6")
+	}
 
-	fmt.Println(args[0])
+	var usersArray []string
 
-	fmt.Println(args[1])
+	for i := 0; i <= len(args); i++ {
 
-	// if len(args)%3 == 0 {
-	// 	return nil, errors.New("Incorrect number of arguments. Expecting multiples of 3")
-	// }
-	//
-	// var usersArray []string
-	//
-	// for i := 0; i <= len(args); i++ {
-	//
-	// 	var userone User
-	// 	userone.Name = args[i]
-	// 	userone.Password = args[i+1]
-	// 	balance, err := strconv.Atoi(args[i+2])
-	// 	if err != nil {
-	// 		return nil, errors.New("Expecting integer value for asset holding at 3 place")
-	// 	}
-	//
-	// 	userone.Balance = balance
-	//
-	// 	b, err := json.Marshal(userone)
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 		return nil, errors.New("Errors while creating json string for userone")
-	// 	}
-	//
-	// 	err = stub.PutState(args[i], b)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	usersArray = append(usersArray, args[i])
-	// 	i = i + 3
-	// }
-	//
-	// b, err := json.Marshal(usersArray)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return nil, errors.New("Errors while creating json string for usertwo")
-	// }
-	//
-	// err = stub.PutState("users", b)
-	// if err != nil {
-	// 	return nil, err
-	// }
+		var userone User
+		userone.Name = args[i]
+		userone.Password = args[i+1]
+		balance, err := strconv.Atoi(args[i+2])
+		if err != nil {
+			return nil, errors.New("Expecting integer value for asset holding at 3 place")
+		}
+
+		userone.Balance = balance
+
+		b, err := json.Marshal(userone)
+		if err != nil {
+			fmt.Println(err)
+			return nil, errors.New("Errors while creating json string for userone")
+		}
+
+		err = stub.PutState(args[i], b)
+		if err != nil {
+			return nil, err
+		}
+		usersArray = append(usersArray, args[i])
+		i = i + 3
+	}
+
+	b, err := json.Marshal(usersArray)
+	if err != nil {
+		fmt.Println(err)
+		return nil, errors.New("Errors while creating json string for usertwo")
+	}
+
+	err = stub.PutState("users", b)
+	if err != nil {
+		return nil, err
+	}
 
 	return nil, nil
 }
