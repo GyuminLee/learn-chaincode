@@ -44,6 +44,8 @@ func main() {
 
 // Init resets all the things
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+
+	fmt.Println("No of arguments:", len(args))
 	if len(args)%3 == 0 {
 		return nil, errors.New("Incorrect number of arguments. Expecting multiples of 3")
 	}
