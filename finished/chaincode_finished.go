@@ -51,33 +51,51 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 
 	var usersArray []string
 
-	for i := 0; i <= len(args); i++ {
-
-		var userone User
-		userone.Name = args[i]
-		userone.Password = args[i+1]
-		balance, err := strconv.Atoi(args[i+2])
-		if err != nil {
-			return nil, errors.New("Expecting integer value for asset holding at 3 place")
-		}
-
-		userone.Balance = balance
-
-		b, err := json.Marshal(userone)
-		if err != nil {
-			fmt.Println(err)
-			return nil, errors.New("Errors while creating json string for userone")
-		}
-
-		err = stub.PutState(args[i], b)
-		if err != nil {
-			return nil, err
-		}
-		usersArray = append(usersArray, args[i])
-		i = i + 3
+	var userone User
+	userone.Name = args[0]
+	userone.Password = args[1]
+	balance, err := strconv.Atoi(args[2])
+	if err != nil {
+		return nil, errors.New("Expecting integer value for asset holding at 3 place")
 	}
 
-	b, err := json.Marshal(usersArray)
+	userone.Balance = balance
+
+	b, err := json.Marshal(userone)
+	if err != nil {
+		fmt.Println(err)
+		return nil, errors.New("Errors while creating json string for userone")
+	}
+
+	err = stub.PutState(args[0], b)
+	if err != nil {
+		return nil, err
+	}
+
+	userone.Name = args[3]
+	userone.Password = args[4]
+	balance, err = strconv.Atoi(args[5])
+	if err != nil {
+		return nil, errors.New("Expecting integer value for asset holding at 3 place")
+	}
+
+	userone.Balance = balance
+
+	b, err = json.Marshal(userone)
+	if err != nil {
+		fmt.Println(err)
+		return nil, errors.New("Errors while creating json string for userone")
+	}
+
+	err = stub.PutState(args[3], b)
+	if err != nil {
+		return nil, err
+	}
+
+	usersArray = append(usersArray, args[0])
+	usersArray = append(usersArray, args[3])
+
+	b, err = json.Marshal(usersArray)
 	if err != nil {
 		fmt.Println(err)
 		return nil, errors.New("Errors while creating json string for usertwo")
