@@ -17,14 +17,22 @@ limitations under the License.
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
 // SimpleChaincode example simple Chaincode implementation
 type SimpleChaincode struct {
+}
+
+type User struct {
+	Name     string `json:"name"`
+	Password string `json:"password"`
+	Balance  int    `json:"balance"`
 }
 
 func main() {
@@ -36,11 +44,45 @@ func main() {
 
 // Init resets all the things
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	if len(args) != 1 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+	if len(args)%3 == 0 {
+		return nil, errors.New("Incorrect number of arguments. Expecting multiples of 3")
 	}
 
-	err := stub.PutState("hello_world", []byte(args[0]))
+	var usersArray []string
+
+	for i := 0; i <= len(args); i++ {
+
+		var userone User
+		userone.Name = args[i]
+		userone.Password = args[i+1]
+		balance, err := strconv.Atoi(args[i+2])
+		if err != nil {
+			return nil, errors.New("Expecting integer value for asset holding at 3 place")
+		}
+
+		userone.Balance = balance
+
+		b, err := json.Marshal(userone)
+		if err != nil {
+			fmt.Println(err)
+			return nil, errors.New("Errors while creating json string for userone")
+		}
+
+		err = stub.PutState(args[i], b)
+		if err != nil {
+			return nil, err
+		}
+		usersArray = append(usersArray, args[i])
+		i = i + 3
+	}
+
+	b, err := json.Marshal(usersArray)
+	if err != nil {
+		fmt.Println(err)
+		return nil, errors.New("Errors while creating json string for usertwo")
+	}
+
+	err = stub.PutState("users", b)
 	if err != nil {
 		return nil, err
 	}
@@ -57,6 +99,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.Init(stub, "init", args)
 	} else if function == "write" {
 		return t.write(stub, args)
+	} else if function == "list_users" {
+		return t.listUsers(stub, args)
 	}
 	fmt.Println("invoke did not find func: " + function)
 
@@ -108,6 +152,19 @@ func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) 
 	valAsbytes, err := stub.GetState(key)
 	if err != nil {
 		jsonResp = "{\"Error\":\"Failed to get state for " + key + "\"}"
+		return nil, errors.New(jsonResp)
+	}
+
+	return valAsbytes, nil
+}
+
+func (t *SimpleChaincode) listUsers(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	var jsonResp string
+	var err error
+
+	valAsbytes, err := stub.GetState("users")
+	if err != nil {
+		jsonResp = "{\"Error\":\"Failed to get state for users}"
 		return nil, errors.New(jsonResp)
 	}
 
