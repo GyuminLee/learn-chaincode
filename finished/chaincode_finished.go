@@ -127,7 +127,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return nil, errors.New("Failed to get state")
 	}
 	var userA User
-	err = json.Unmarshal(Avalbytes, userA)
+	err = json.Unmarshal(Avalbytes, &userA)
 	if err != nil {
 		return nil, errors.New("Failed to marshal string to struct of userA")
 	}
@@ -138,7 +138,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	}
 
 	var userB User
-	err = json.Unmarshal(Bvalbytes, userB)
+	err = json.Unmarshal(Bvalbytes, &userB)
 	if err != nil {
 		return nil, errors.New("Failed to marshal string to struct of userB")
 	}
