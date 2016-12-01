@@ -109,9 +109,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	return nil, nil
 }
 
-// Invoke isur entry point to invoke a chaincode function
-func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	fmt.Println("invoke is running " + function)
+func (t *SimpleChaincode) Transaction(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 
 	var X int // Transaction value
 	var err error
@@ -177,7 +175,75 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	}
 
 	return nil, nil
+}
 
+func (t *SimpleChaincode) CreateUser(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+
+	if len(args) != 3 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 3. name,password,balance to create user")
+	}
+
+	usersArray, err := stub.GetState("users")
+	if err != nil {
+		return nil, err
+	}
+
+	var users []string
+
+	err = json.Unmarshal(usersArray, &users)
+
+	if err != nil {
+		return nil, err
+	}
+
+	users = append(users, args[0])
+
+	b, err := json.Marshal(users)
+	if err != nil {
+		fmt.Println(err)
+		return nil, errors.New("Errors while creating json string for usertwo")
+	}
+
+	err = stub.PutState("users", b)
+	if err != nil {
+		return nil, err
+	}
+
+	var userone User
+	userone.Name = args[0]
+	userone.Password = args[1]
+	balance, err := strconv.Atoi(args[2])
+	if err != nil {
+		return nil, errors.New("Expecting integer value for asset holding at 3 place")
+	}
+
+	userone.Balance = balance
+
+	b, err = json.Marshal(userone)
+	if err != nil {
+		fmt.Println(err)
+		return nil, errors.New("Errors while creating json string for userone")
+	}
+
+	err = stub.PutState(args[0], b)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+// Invoke isur entry point to invoke a chaincode function
+func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+	fmt.Println("invoke is running " + function)
+
+	if function == "transaction" {
+		return t.Transaction(stub, args)
+	} else if function == "create_user" {
+		return t.CreateUser(stub, args)
+	}
+
+	return nil, nil
 }
 
 // Query is our entry point for queries
