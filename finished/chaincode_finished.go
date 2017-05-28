@@ -72,6 +72,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	if function == "delete" {
 		// Deletes an entity from its state
 		return t.delete(stub, args)
+	}else if function == "add"{
+		return t.add(stub, args)
 	}
 
 	var A, B string    // Entities
@@ -156,6 +158,61 @@ func (t *SimpleChaincode) delete(stub shim.ChaincodeStubInterface, args []string
 		return nil, errors.New("Failed to delete state")
 	}
 
+	return nil, nil
+}
+
+// add an entity from state
+func (t *SimpleChaincode) add(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	if len(args) != 2 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+	}
+	var A string    // Entities
+	var Aval int // Asset holdings
+	var X int          // Transaction value
+	var err error
+	A = args[0]
+	
+
+	// Get the state from the ledger
+	Avalbytes, err := stub.GetState(A)
+	if err != nil {
+		return nil, errors.New("Failed to get state")
+	}
+	if Avalbytes == nil {
+		return nil, errors.New("Entity not found")
+	}
+	Aval, _ = strconv.Atoi(string(Avalbytes))
+
+
+	// Perform the execution
+	X, err = strconv.Atoi(args[1])
+	Aval = Aval + X
+	fmt.Printf("Aval = %d", Aval)
+
+	// Write the state back to the ledger
+	err = stub.PutState(A, []byte(strconv.Itoa(Aval)))
+	if err != nil {
+		return nil, err
+	}
+
+	//Event based
+        b, err := stub.GetState(EVENT_COUNTER)
+	if err != nil {
+		return nil, errors.New("Failed to get state")
+	}
+	noevts, _ := strconv.Atoi(string(b))
+
+	tosend := "Event Counter is " + string(b)
+
+	err = stub.PutState(EVENT_COUNTER, []byte(strconv.Itoa(noevts+1)))
+	if err != nil {
+		return nil, err
+	}
+
+	err = stub.SetEvent("evtsender", []byte(tosend))
+	if err != nil {
+		return nil, err
+        }
 	return nil, nil
 }
 
